@@ -21,7 +21,7 @@ public:
 	Mat dirac(Mat x, double sigma);
 	Mat div(Mat nx, Mat ny);
 	Mat distReg_p2(Mat phi);
-	Mat p2(Mat s);
+	Mat dp(Mat s);
 	Mat edgeT(Mat phi, Mat g, double sigma);
 	Mat areaT(Mat phi, Mat g, double sigma);
 	void run(Mat &phi, Mat &g, int iter);

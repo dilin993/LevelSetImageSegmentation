@@ -78,17 +78,19 @@ Mat DRLSE_Edge::div(Mat nx, Mat ny)
 
 
 
-Mat DRLSE_Edge::p2(Mat s)
+Mat DRLSE_Edge::dp(Mat s)
 {
 	Mat p = s.clone();
 	for (int i = 0; i<s.rows; i++)
 	{
 		for (int j = 0; j<s.cols; j++)
 		{
-			if (s.at<double>(i, j) <= 1)
-				p.at<double>(i, j) = (1.0 / (2 * M_PI*M_PI))*(1 - cos(2.0*M_PI*s.at<double>(i, j)));
+			if (s.at<double>(i, j) == 0)
+				p.at<double>(i, j) = 1;
+			else if (s.at<double>(i, j) <= 1)
+				p.at<double>(i, j) = ((1.0 / (2 * M_PI))*sin(2*M_PI*s.at<double>(i,j)))/ s.at<double>(i, j);
 			else
-				p.at<double>(i, j) = 0.5*pow(s.at<double>(i, j) - 1.0, 2.0);
+				p.at<double>(i, j) = (s.at<double>(i, j) - 1)/ s.at<double>(i, j);
 		}
 	}
 	return p;
@@ -97,21 +99,17 @@ Mat DRLSE_Edge::p2(Mat s)
 
 Mat DRLSE_Edge::distReg_p2(Mat phi)
 {
-	Mat dx, dy, dx2, dy2, dm;
+	Mat dx, dy, dm;
 	gradient(phi, dx, dy);
-	pow(dx, 2, dx2);
-	pow(dy, 2, dy2);
-	sqrt(dx2 + dy2, dm);
-	Mat dp = p2(dm);
+	magnitude(dx, dy, dm);
+	Mat dps = dp(dm);
 	Mat nx, ny;
-	multiply(dp, dx, nx);
-	multiply(dp, dy, ny);
+	multiply(dps, dx, nx);
+	multiply(dps, dy, ny);
 	dx.release();
 	dy.release();
-	dx2.release();
-	dy2.release();
 	dm.release();
-	dp.release();
+	dps.release();
 	return div(nx, ny);
 }
 
@@ -119,7 +117,32 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 
 Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 {
-	Mat dx, dy, dx2, dy2, dm;
+	Mat dphix, dphiy, dgx, dgy,dphim;
+	gradient(phi, dphix, dphiy);
+	gradient(g, dgx, dgy);
+	magnitude(dphix, dphiy, dphim);
+	dphim = dphim + 1e-10; // to avoid division by zero
+	divide(dphix, dphim, dphix);
+	divide(dphiy, dphim, dphiy);
+	Mat diracPhi = dirac(phi, sigma);
+	Mat y1, y2, y3;
+	multiply(dphix, dgx, y1);
+	multiply(dphiy, dgy, y2);
+	multiply(g, div(dphix, dphiy), y3);
+	y1 = y1 + y2 + y3;
+	multiply(y1, diracPhi, y1);
+	dphix.release();
+	dphiy.release();
+	dgx.release();
+	dgy.release();
+	dphim.release();
+	diracPhi.release();
+	y2.release();
+	y3.release();
+
+	return y1;
+
+	/*Mat dx, dy, dx2, dy2, dm;
 	gradient(phi, dx, dy);
 	pow(dx, 2, dx2);
 	pow(dy, 2, dy2);
@@ -138,7 +161,7 @@ Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 	dm.release();
 	nx.release();
 	ny.release();
-	return e;
+	return e;*/
 }
 
 
