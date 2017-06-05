@@ -28,6 +28,8 @@ public:
 	void gradient(Mat &src, Mat &dx, Mat &dy);
 	void divide2(Mat &src1, Mat &src2, Mat &ans);
 	void divide2(double val1, Mat &src2, Mat &ans);
+	Mat sin2(Mat &x);
+	Mat cos2(Mat &x);
 
 private:
 	double mu;

@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
 	drlse.gradient(img, dx, dy);
     pow(dx,2.0,dx2);
     pow(dy,2.0,dy2);
-    f = dx2 + dy2 + 1;
-    drlse.divide2(1.0,f,g);
+    f = dx2 + dy2;
+    g = 1.0/(f+1);
 
     Mat phi = Mat::ones( img.rows, img.cols ,  CV_64F);
     phi = c0 * phi ;

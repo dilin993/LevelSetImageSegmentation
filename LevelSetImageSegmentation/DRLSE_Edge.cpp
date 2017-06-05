@@ -47,7 +47,7 @@ Mat DRLSE_Edge::neumannBoundFunc(Mat f)
 
 Mat DRLSE_Edge::dirac(Mat x, double sigma)
 {
-	Mat f = x.clone();
+	/*Mat f = x.clone();
 	for (int i = 0; i<x.rows; i++)
 	{
 		for (int j = 0; j<x.cols; j++)
@@ -58,6 +58,16 @@ Mat DRLSE_Edge::dirac(Mat x, double sigma)
 				f.at<double>(i, j) = 0;
 		}
 	}
+	return f;*/
+	Mat f, b;
+	Mat q = M_PI * x / sigma;
+	f = (1.0 / (2.0*sigma))*(1.0 + cos2(q));
+	b = (x <= sigma) & (x >= -sigma);
+	b.convertTo(b,CV_64F);
+	b = b / 255;
+	f = f.mul(b);
+	b.release();
+	q.release();
 	return f;
 }
 
@@ -65,13 +75,12 @@ Mat DRLSE_Edge::dirac(Mat x, double sigma)
 
 Mat DRLSE_Edge::div(Mat nx, Mat ny)
 {
-	Mat nxx, nxy, nyx, nyy, f;
-	gradient(nx, nxx, nxy);
-	gradient(ny, nyx, nyy);
+	Mat nxx, junk, nyy, f;
+	gradient(nx, nxx, junk);
+	gradient(ny, junk, nyy);
 	f = nxx + nyy;
 	nxx.release();
-	nxy.release();
-	nyx.release();
+	junk.release();
 	nyy.release();
 	return f;
 }
@@ -85,7 +94,7 @@ Mat DRLSE_Edge::dp(Mat s)
 	{
 		for (int j = 0; j<s.cols; j++)
 		{
-			if (s.at<double>(i, j) == 0)
+			if (s.at<double>(i, j) < 1e-10)
 				p.at<double>(i, j) = 1;
 			else if (s.at<double>(i, j) <= 1)
 				p.at<double>(i, j) = ((1.0 / (2 * M_PI))*sin(2*M_PI*s.at<double>(i,j)))/ s.at<double>(i, j);
@@ -99,7 +108,7 @@ Mat DRLSE_Edge::dp(Mat s)
 
 Mat DRLSE_Edge::distReg_p2(Mat phi)
 {
-	Mat dx, dy, dm;
+	/*Mat dx, dy, dm;
 	gradient(phi, dx, dy);
 	magnitude(dx, dy, dm);
 	Mat dps = dp(dm);
@@ -110,41 +119,80 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 	dy.release();
 	dm.release();
 	dps.release();
-	return div(nx, ny);
+	return div(nx, ny);*/
 
-	/*Mat phi_x, phi_y,s;
+	Mat phi_x, phi_y,s;
 	gradient(phi, phi_x, phi_y);
-	magnitude(phi_x, phi_y, s);*/
+	magnitude(phi_x, phi_y, s);
+	Mat a, b,ps,dps,f,delta2;
+	a = (s >= 0) & (s <= 1);
+	b = (s > 1);
+	a.convertTo(a, CV_64F);
+	a = a / 255.0;
+	b.convertTo(b, CV_64F);
+	b = b / 255.0;
+	Mat q = 2.0*M_PI*s;
+	ps = a.mul(sin2(q) / (2.0 * M_PI)) + b.mul(s-1.0);
+	Mat ps_eq_0, ps_neq_0, s_eq_0, s_neq_0;
+	ps_eq_0 = (ps == 0);
+	ps_neq_0 = (ps != 0);
+	s_eq_0 = (s == 0);
+	s_neq_0 = (s != 0);
+	ps_eq_0.convertTo(ps_eq_0, CV_64F);
+	ps_eq_0 = ps_eq_0 / 255;
+	ps_neq_0.convertTo(ps_neq_0, CV_64F);
+	ps_neq_0 = ps_neq_0 / 255;
+	s_eq_0.convertTo(s_eq_0, CV_64F);
+	s_eq_0 = s_eq_0 / 255;
+	s_neq_0.convertTo(s_neq_0, CV_64F);
+	s_neq_0 = s_neq_0 / 255;
+	dps = (ps_neq_0.mul(ps) + ps_eq_0) / (s_neq_0.mul(s) + s_eq_0);
+	Laplacian(phi, delta2, CV_64F);
+	f = div(dps.mul(phi_x) - phi_x, dps.mul(phi_y) - phi_y) + delta2;
+	phi_x.release();
+	phi_y.release();
+	s.release();
+	a.release();
+	b.release();
+	ps.release();
+	dps.release();
+	delta2.release();
+	q.release();
+	ps_eq_0.release();
+	ps_neq_0.release();
+	s_eq_0.release();
+	s_neq_0.release();
+	return f;
 }
 
 
 
 Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 {
-	Mat dphix, dphiy, dgx, dgy,dphim;
-	gradient(phi, dphix, dphiy);
-	gradient(g, dgx, dgy);
-	magnitude(dphix, dphiy, dphim);
-	dphim = dphim + 1e-10; // to avoid division by zero
-	divide2(dphix, dphim, dphix);
-	divide2(dphiy, dphim, dphiy);
-	Mat diracPhi = dirac(phi, sigma);
-	Mat y1, y2, y3;
-	multiply(dphix, dgx, y1);
-	multiply(dphiy, dgy, y2);
-	multiply(g, div(dphix, dphiy), y3);
-	y1 = y1 + y2 + y3;
-	multiply(y1, diracPhi, y1);
-	dphix.release();
-	dphiy.release();
-	dgx.release();
-	dgy.release();
-	dphim.release();
-	diracPhi.release();
-	y2.release();
-	y3.release();
+	//Mat dphix, dphiy, dgx, dgy,dphim;
+	//gradient(phi, dphix, dphiy);
+	//gradient(g, dgx, dgy);
+	//magnitude(dphix, dphiy, dphim);
+	//dphim = dphim + 1e-10; // to avoid division by zero
+	//divide2(dphix, dphim, dphix);
+	//divide2(dphiy, dphim, dphiy);
+	//Mat diracPhi = dirac(phi, sigma);
+	//Mat y1, y2, y3;
+	//multiply(dphix, dgx, y1);
+	//multiply(dphiy, dgy, y2);
+	//multiply(g, div(dphix, dphiy), y3);
+	//y1 = y1 + y2 + y3;
+	//multiply(y1, diracPhi, y1);
+	//dphix.release();
+	//dphiy.release();
+	//dgx.release();
+	//dgy.release();
+	//dphim.release();
+	//diracPhi.release();
+	//y2.release();
+	//y3.release();
 
-	return y1;
+	//return y1;
 
 	/*Mat dx, dy, dx2, dy2, dm;
 	gradient(phi, dx, dy);
@@ -166,14 +214,27 @@ Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 	nx.release();
 	ny.release();
 	return e;*/
+
+	Mat phi_x, phi_y, vx, vy, s;
+	gradient(phi, phi_x, phi_y);
+	gradient(g, vx, vy);
+	magnitude(phi_x, phi_y, s);
+	Mat Nx = phi_x / (s + 1e-10);
+	Mat Ny = phi_y / (s + 1e-10);
+	Mat curvature = div(Nx, Ny);
+	Mat diracPhi = dirac(phi, sigma);
+	Mat edgeTerm = diracPhi.mul(vx.mul(Nx) + vy.mul(Ny)) +
+		diracPhi.mul(g.mul(curvature));
+	return edgeTerm;
 }
 
 
 
 Mat DRLSE_Edge::areaT(Mat phi, Mat g, double sigma)
 {
-	Mat a;
-	multiply(g, dirac(phi, sigma), a);
+	Mat a,diracPhi;
+	diracPhi = dirac(phi, sigma);
+	a = g.mul(diracPhi);
 	return a;
 }
 
@@ -188,6 +249,7 @@ void DRLSE_Edge::run(Mat &phi, Mat &g, int iter)
 		distTerm = distReg_p2(phi);
 		edgeTerm = edgeT(phi, g, sigma);
 		areaTerm = areaT(phi, g, sigma);
+		imwrite("dist.bmp", distTerm);
 		phi = phi + timeStep * (mu*distTerm + lamda*edgeTerm + alpha*areaTerm);
 	}
 }
@@ -195,8 +257,18 @@ void DRLSE_Edge::run(Mat &phi, Mat &g, int iter)
 
 void DRLSE_Edge::gradient(Mat &src, Mat &dx, Mat &dy)
 {
-	Sobel(src, dx, CV_64FC1, 1, 0, 3);
-	Sobel(src, dy, CV_64FC1, 0, 1, 3);
+	/*Sobel(src, dx, CV_64FC1, 1, 0, 3);
+	Sobel(src, dy, CV_64FC1, 0, 1, 3);*/
+	static cv::Mat kernelx = (cv::Mat_<double>(1, 3) << -0.5, 0, 0.5);
+	static cv::Mat kernely = (cv::Mat_<double>(3, 1) << -0.5, 0, 0.5);
+
+	cv::filter2D(src, dx, -1, kernelx, cv::Point(-1, -1), 0, cv::BORDER_REPLICATE);
+	cv::filter2D(src, dy, -1, kernely, cv::Point(-1, -1), 0, cv::BORDER_REPLICATE);
+
+	dx.col(dx.cols - 1) *= 2;
+	dx.col(0) *= 2;
+	dy.row(dy.rows - 1) *= 2;
+	dy.row(0) *= 2;
 }
 
 void DRLSE_Edge::divide2(Mat & src1, Mat & src2, Mat & ans)
@@ -221,4 +293,30 @@ void DRLSE_Edge::divide2(double val1, Mat & src2, Mat & ans)
 			ans.at<double>(i, j) = val1 / src2.at<double>(i, j);
 		}
 	}
+}
+
+Mat DRLSE_Edge::sin2(Mat & x)
+{
+	Mat ans = x.clone();
+	for (int i = 0;i < x.rows; i++)
+	{
+		for (int j = 0; j < x.cols; j++)
+		{
+			ans.at<double>(i, j) = sin(x.at<double>(i, j));
+		}
+	}
+	return ans;
+}
+
+Mat DRLSE_Edge::cos2(Mat & x)
+{
+	Mat ans = x.clone();
+	for (int i = 0; i < x.rows; i++)
+	{
+		for (int j = 0; j < x.cols; j++)
+		{
+			ans.at<double>(i, j) = cos(x.at<double>(i, j));
+		}
+	}
+	return ans;
 }
