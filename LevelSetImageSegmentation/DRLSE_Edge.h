@@ -26,6 +26,8 @@ public:
 	Mat areaT(Mat phi, Mat g, double sigma);
 	void run(Mat &phi, Mat &g, int iter);
 	void gradient(Mat &src, Mat &dx, Mat &dy);
+	void divide2(Mat &src1, Mat &src2, Mat &ans);
+	void divide2(double val1, Mat &src2, Mat &ans);
 
 private:
 	double mu;

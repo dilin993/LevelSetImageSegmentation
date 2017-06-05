@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     pow(dx,2.0,dx2);
     pow(dy,2.0,dy2);
     f = dx2 + dy2 + 1;
-    divide(1.0,f,g);
+    drlse.divide2(1.0,f,g);
 
     Mat phi = Mat::ones( img.rows, img.cols ,  CV_64F);
     phi = c0 * phi ;

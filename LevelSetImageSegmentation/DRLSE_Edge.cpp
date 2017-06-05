@@ -111,6 +111,10 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 	dm.release();
 	dps.release();
 	return div(nx, ny);
+
+	/*Mat phi_x, phi_y,s;
+	gradient(phi, phi_x, phi_y);
+	magnitude(phi_x, phi_y, s);*/
 }
 
 
@@ -122,8 +126,8 @@ Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 	gradient(g, dgx, dgy);
 	magnitude(dphix, dphiy, dphim);
 	dphim = dphim + 1e-10; // to avoid division by zero
-	divide(dphix, dphim, dphix);
-	divide(dphiy, dphim, dphiy);
+	divide2(dphix, dphim, dphix);
+	divide2(dphiy, dphim, dphiy);
 	Mat diracPhi = dirac(phi, sigma);
 	Mat y1, y2, y3;
 	multiply(dphix, dgx, y1);
@@ -147,8 +151,8 @@ Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 	pow(dx, 2, dx2);
 	pow(dy, 2, dy2);
 	sqrt(dx2 + dy2, dm);
-	divide(dx, dm + 1e-10, dx);
-	divide(dy, dm + 1e-10, dy);
+	divide2(dx, dm + 1e-10, dx);
+	divide2(dy, dm + 1e-10, dy);
 	Mat nx, ny;
 	multiply(g, dx, nx);
 	multiply(g, dy, ny);
@@ -177,10 +181,14 @@ Mat DRLSE_Edge::areaT(Mat phi, Mat g, double sigma)
 
 void DRLSE_Edge::run(Mat &phi, Mat &g, int iter)
 {
+	Mat distTerm, edgeTerm, areaTerm;
 	for (int i = 0; i<iter; i++)
 	{
 		phi = neumannBoundFunc(phi);
-		phi = phi + timeStep * (mu*distReg_p2(phi) + lamda*edgeT(phi, g, sigma) + alpha*areaT(phi, g, sigma));
+		distTerm = distReg_p2(phi);
+		edgeTerm = edgeT(phi, g, sigma);
+		areaTerm = areaT(phi, g, sigma);
+		phi = phi + timeStep * (mu*distTerm + lamda*edgeTerm + alpha*areaTerm);
 	}
 }
 
@@ -189,4 +197,28 @@ void DRLSE_Edge::gradient(Mat &src, Mat &dx, Mat &dy)
 {
 	Sobel(src, dx, CV_64FC1, 1, 0, 3);
 	Sobel(src, dy, CV_64FC1, 0, 1, 3);
+}
+
+void DRLSE_Edge::divide2(Mat & src1, Mat & src2, Mat & ans)
+{
+	ans = src1.clone();
+	for (int i = 0; i < src1.rows; i++)
+	{
+		for (int j = 0; j < src1.cols; j++)
+		{
+			ans.at<double>(i, j) = src1.at<double>(i, j) / src2.at<double>(i, j);
+		}
+	}
+}
+
+void DRLSE_Edge::divide2(double val1, Mat & src2, Mat & ans)
+{
+	ans = src2.clone();
+	for (int i = 0; i < src2.rows; i++)
+	{
+		for (int j = 0; j < src2.cols; j++)
+		{
+			ans.at<double>(i, j) = val1 / src2.at<double>(i, j);
+		}
+	}
 }
