@@ -10,10 +10,10 @@ DRLSE_Edge::DRLSE_Edge(double mu, double lamda, double alpha, double sigma, doub
 	return;
 }
 
-DRLSE_Edge::DRLSE_Edge() 
-
+DRLSE_Edge::DRLSE_Edge() :
+	DRLSE_Edge(0.2, 5, -3, 1.5, 1)
 {
-	DRLSE_Edge(0.2, 5, -3, 1.5, 1);
+	return;
 }
 
 Mat DRLSE_Edge::neumannBoundFunc(Mat f)
