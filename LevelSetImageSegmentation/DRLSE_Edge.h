@@ -1,8 +1,10 @@
 #ifndef DRLSE_DRLSE_EDGE_H
 #define DRLSE_DRLSE_EDGE_H
-#include<opencv2/opencv.hpp>
-#include<iostream>
-#include<cmath>
+
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <cmath>
+#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -24,7 +26,7 @@ public:
 	Mat p2(Mat s);
 	Mat edgeT(Mat phi, Mat g, double sigma);
 	Mat areaT(Mat phi, Mat g, double sigma);
-	void run(Mat &phi, Mat &g, int iter);
+	void run(Mat phi, Mat g, int iter);
 	void gradient(Mat &src, Mat &dx, Mat &dy);
 
 private:

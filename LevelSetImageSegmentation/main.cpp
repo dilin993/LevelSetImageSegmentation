@@ -2,8 +2,8 @@
 // Created by dilin on 6/4/17.
 //
 
-#include<opencv2/opencv.hpp>
-#include<iostream>
+#include <opencv2/opencv.hpp>
+#include <iostream>
 #include "DRLSE_Edge.h"
 
 using namespace std;
@@ -26,21 +26,26 @@ int main(int argc, char *argv[])
 	Mat img, imgSmooth, dx, dy, f, g;
 
 	img = imread(argv[1], cv::ImreadModes::IMREAD_GRAYSCALE);
+	imshow("Original",img);
 	//img.convertTo(img,CV_64F);
-	GaussianBlur(img, imgSmooth, Size(7, 7), sigma);
+	GaussianBlur(img, imgSmooth, Size(15, 15), sigma);
 	spatialGradient(imgSmooth, dx, dy);
 	dx.convertTo(dx, CV_64F);
-	dx.convertTo(dy, CV_64F);
+	dy.convertTo(dy, CV_64F);
+	
+	//imshow ("dx",dx);
+	//imshow ("dy",dy);
+	//cvWaitKey(0);
+
 	pow(dx, 2.0, dx);
 	pow(dy, 2.0, dy);
 	f = dx + dy;
-	divide(1.0, f, g);
+	g= 1/(1+f);
+	//divide(1.0, f, g);
 
 	Mat phi = Mat::ones(img.rows, img.cols, CV_64F);
 	phi = c0 * phi;
-
-
-
+	
 	for (int i = 24; i < 35; i++)
 	{
 
@@ -58,17 +63,23 @@ int main(int argc, char *argv[])
 
 		}
 	}
-
-	namedWindow("dx", WINDOW_NORMAL);
-	namedWindow("dy", WINDOW_NORMAL);
-	namedWindow("dirac", WINDOW_NORMAL);
-
+	
+	//namedWindow("dx", WINDOW_NORMAL);
+	//namedWindow("dy", WINDOW_NORMAL);
+    //namedWindow("dirac", WINDOW_NORMAL);
+	
 	DRLSE_Edge drlse;
 
 	Mat ddx, ddy, dirac;
 	drlse.gradient(img, ddx, ddy);
 
-	dirac = drlse.edgeT(phi, g, epsilon);
+	drlse.run(phi,g,INNER_ITER);
+	
+	imshow("phi ",phi);
+	cvWaitKey(0);
+	//dirac = drlse.edgeT(phi, g, epsilon);
+
+	
 	cout << sum(dirac) << endl;
 	ddx.convertTo(ddx, CV_8U);
 	ddy.convertTo(ddy, CV_8U);

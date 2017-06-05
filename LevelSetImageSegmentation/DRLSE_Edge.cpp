@@ -10,10 +10,11 @@ DRLSE_Edge::DRLSE_Edge(double mu, double lamda, double alpha, double sigma, doub
 	return;
 }
 
-DRLSE_Edge::DRLSE_Edge() :
-	DRLSE_Edge(0.2, 5, -3, 1.5, 1)
+DRLSE_Edge::DRLSE_Edge() 
+
 {
-	return;
+	DRLSE_Edge(0.2, 5, -3, 1.5, 1);
+	//return;
 }
 
 Mat DRLSE_Edge::neumannBoundFunc(Mat f)
@@ -119,18 +120,32 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 
 Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 {
-	Mat dx, dy, dx2, dy2, dm;
+	Mat dx, dy, dx2, dy2, dm, vx, vy;
+	gradient(g, vx, vy);
 	gradient(phi, dx, dy);
+
+
 	pow(dx, 2, dx2);
 	pow(dy, 2, dy2);
 	sqrt(dx2 + dy2, dm);
-	divide(dx, dm + 1e-10, dx);
-	divide(dy, dm + 1e-10, dy);
+	//divide(dx, dm + 1e-10, dx);
+	//divide(dy, dm + 1e-10, dy);
+
 	Mat nx, ny;
-	multiply(g, dx, nx);
-	multiply(g, dy, ny);
-	Mat e;
-	multiply(dirac(phi, sigma), div(nx, ny), e);
+
+	nx = dx / (dm + 1e-10);
+	ny = dy / (dm + 1e-10);
+
+	Mat curvature = div(nx,ny);
+	Mat diracPhi = dirac(phi, sigma);
+	Mat t1,t2,t3,t4 ,t5;
+
+	multiply(vx,nx,t1);
+	multiply(vy,ny,t2);
+	multiply(diracPhi,t1+t2, t3);
+	multiply(diracPhi,g, t4);
+	multiply(t4,curvature, t5);
+
 	dx.release();
 	dy.release();
 	dx2.release();
@@ -138,7 +153,13 @@ Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 	dm.release();
 	nx.release();
 	ny.release();
-	return e;
+	t1.release();
+	t2.release();
+	t4.release();
+	curvature.release();
+	diracPhi.release();
+
+	return t3+t5;
 }
 
 
@@ -152,12 +173,15 @@ Mat DRLSE_Edge::areaT(Mat phi, Mat g, double sigma)
 
 
 
-void DRLSE_Edge::run(Mat &phi, Mat &g, int iter)
+void DRLSE_Edge::run(Mat phi, Mat g, int iter)
 {
 	for (int i = 0; i<iter; i++)
 	{
 		phi = neumannBoundFunc(phi);
 		phi = phi + timeStep * (mu*distReg_p2(phi) + lamda*edgeT(phi, g, sigma) + alpha*areaT(phi, g, sigma));
+		imshow("phi",phi);
+		cvWaitKey(0);
+
 	}
 }
 
@@ -167,3 +191,4 @@ void DRLSE_Edge::gradient(Mat &src, Mat &dx, Mat &dy)
 	Sobel(src, dx, CV_64FC1, 1, 0, 3);
 	Sobel(src, dy, CV_64FC1, 0, 1, 3);
 }
+
