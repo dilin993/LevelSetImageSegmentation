@@ -10,10 +10,10 @@ DRLSE_Edge::DRLSE_Edge(double mu, double lamda, double alpha, double sigma, doub
 	return;
 }
 
-DRLSE_Edge::DRLSE_Edge() :
-	DRLSE_Edge(0.2, 5, -3, 1.5, 1)
+DRLSE_Edge::DRLSE_Edge() 
+
 {
-	return;
+	DRLSE_Edge(0.2, 5, -3, 1.5, 1);
 }
 
 Mat DRLSE_Edge::neumannBoundFunc(Mat f)
@@ -47,18 +47,6 @@ Mat DRLSE_Edge::neumannBoundFunc(Mat f)
 
 Mat DRLSE_Edge::dirac(Mat x, double sigma)
 {
-	/*Mat f = x.clone();
-	for (int i = 0; i<x.rows; i++)
-	{
-		for (int j = 0; j<x.cols; j++)
-		{
-			if (abs(x.at<double>(i, j)) <= sigma)
-				f.at<double>(i, j) = (1.0 / (2.0*sigma))*(1 + cos(M_PI*x.at<double>(i, j) / sigma));
-			else
-				f.at<double>(i, j) = 0;
-		}
-	}
-	return f;*/
 	Mat f, b;
 	Mat q = M_PI * x / sigma;
 	f = (1.0 / (2.0*sigma))*(1.0 + cos2(q));
@@ -86,7 +74,6 @@ Mat DRLSE_Edge::div(Mat nx, Mat ny)
 }
 
 
-
 Mat DRLSE_Edge::dp(Mat s)
 {
 	Mat p = s.clone();
@@ -108,22 +95,10 @@ Mat DRLSE_Edge::dp(Mat s)
 
 Mat DRLSE_Edge::distReg_p2(Mat phi)
 {
-	/*Mat dx, dy, dm;
-	gradient(phi, dx, dy);
-	magnitude(dx, dy, dm);
-	Mat dps = dp(dm);
-	Mat nx, ny;
-	multiply(dps, dx, nx);
-	multiply(dps, dy, ny);
-	dx.release();
-	dy.release();
-	dm.release();
-	dps.release();
-	return div(nx, ny);*/
-
 	Mat phi_x, phi_y,s;
 	gradient(phi, phi_x, phi_y);
 	magnitude(phi_x, phi_y, s);
+	
 	Mat a, b,ps,dps,f,delta2;
 	a = (s >= 0) & (s <= 1);
 	b = (s > 1);
@@ -131,8 +106,10 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 	a = a / 255.0;
 	b.convertTo(b, CV_64F);
 	b = b / 255.0;
+	
 	Mat q = 2.0*M_PI*s;
 	ps = a.mul(sin2(q) / (2.0 * M_PI)) + b.mul(s-1.0);
+	
 	Mat ps_eq_0, ps_neq_0, s_eq_0, s_neq_0;
 	ps_eq_0 = (ps == 0);
 	ps_neq_0 = (ps != 0);
@@ -149,6 +126,7 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 	dps = (ps_neq_0.mul(ps) + ps_eq_0) / (s_neq_0.mul(s) + s_eq_0);
 	Laplacian(phi, delta2, CV_64F);
 	f = div(dps.mul(phi_x) - phi_x, dps.mul(phi_y) - phi_y) + delta2;
+
 	phi_x.release();
 	phi_y.release();
 	s.release();
@@ -162,6 +140,7 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 	ps_neq_0.release();
 	s_eq_0.release();
 	s_neq_0.release();
+
 	return f;
 }
 
@@ -169,55 +148,10 @@ Mat DRLSE_Edge::distReg_p2(Mat phi)
 
 Mat DRLSE_Edge::edgeT(Mat phi, Mat g, double sigma)
 {
-	//Mat dphix, dphiy, dgx, dgy,dphim;
-	//gradient(phi, dphix, dphiy);
-	//gradient(g, dgx, dgy);
-	//magnitude(dphix, dphiy, dphim);
-	//dphim = dphim + 1e-10; // to avoid division by zero
-	//divide2(dphix, dphim, dphix);
-	//divide2(dphiy, dphim, dphiy);
-	//Mat diracPhi = dirac(phi, sigma);
-	//Mat y1, y2, y3;
-	//multiply(dphix, dgx, y1);
-	//multiply(dphiy, dgy, y2);
-	//multiply(g, div(dphix, dphiy), y3);
-	//y1 = y1 + y2 + y3;
-	//multiply(y1, diracPhi, y1);
-	//dphix.release();
-	//dphiy.release();
-	//dgx.release();
-	//dgy.release();
-	//dphim.release();
-	//diracPhi.release();
-	//y2.release();
-	//y3.release();
 
-	//return y1;
-
-	/*Mat dx, dy, dx2, dy2, dm;
-	gradient(phi, dx, dy);
-	pow(dx, 2, dx2);
-	pow(dy, 2, dy2);
-	sqrt(dx2 + dy2, dm);
-	divide2(dx, dm + 1e-10, dx);
-	divide2(dy, dm + 1e-10, dy);
-	Mat nx, ny;
-	multiply(g, dx, nx);
-	multiply(g, dy, ny);
-	Mat e;
-	multiply(dirac(phi, sigma), div(nx, ny), e);
-	dx.release();
-	dy.release();
-	dx2.release();
-	dy2.release();
-	dm.release();
-	nx.release();
-	ny.release();
-	return e;*/
-
-	Mat phi_x, phi_y, vx, vy, s;
+	Mat phi_x, phi_y, s;
 	gradient(phi, phi_x, phi_y);
-	gradient(g, vx, vy);
+	//gradient(g, vx, vy);
 	magnitude(phi_x, phi_y, s);
 	Mat Nx = phi_x / (s + 1e-10);
 	Mat Ny = phi_y / (s + 1e-10);
@@ -243,13 +177,13 @@ Mat DRLSE_Edge::areaT(Mat phi, Mat g, double sigma)
 void DRLSE_Edge::run(Mat &phi, Mat &g, int iter)
 {
 	Mat distTerm, edgeTerm, areaTerm;
+	gradient(g, vx, vy);
 	for (int i = 0; i<iter; i++)
 	{
 		phi = neumannBoundFunc(phi);
 		distTerm = distReg_p2(phi);
 		edgeTerm = edgeT(phi, g, sigma);
 		areaTerm = areaT(phi, g, sigma);
-		imwrite("dist.bmp", distTerm);
 		phi = phi + timeStep * (mu*distTerm + lamda*edgeTerm + alpha*areaTerm);
 	}
 }
@@ -257,8 +191,6 @@ void DRLSE_Edge::run(Mat &phi, Mat &g, int iter)
 
 void DRLSE_Edge::gradient(Mat &src, Mat &dx, Mat &dy)
 {
-	/*Sobel(src, dx, CV_64FC1, 1, 0, 3);
-	Sobel(src, dy, CV_64FC1, 0, 1, 3);*/
 	static cv::Mat kernelx = (cv::Mat_<double>(1, 3) << -0.5, 0, 0.5);
 	static cv::Mat kernely = (cv::Mat_<double>(3, 1) << -0.5, 0, 0.5);
 
@@ -271,29 +203,6 @@ void DRLSE_Edge::gradient(Mat &src, Mat &dx, Mat &dy)
 	dy.row(0) *= 2;
 }
 
-void DRLSE_Edge::divide2(Mat & src1, Mat & src2, Mat & ans)
-{
-	ans = src1.clone();
-	for (int i = 0; i < src1.rows; i++)
-	{
-		for (int j = 0; j < src1.cols; j++)
-		{
-			ans.at<double>(i, j) = src1.at<double>(i, j) / src2.at<double>(i, j);
-		}
-	}
-}
-
-void DRLSE_Edge::divide2(double val1, Mat & src2, Mat & ans)
-{
-	ans = src2.clone();
-	for (int i = 0; i < src2.rows; i++)
-	{
-		for (int j = 0; j < src2.cols; j++)
-		{
-			ans.at<double>(i, j) = val1 / src2.at<double>(i, j);
-		}
-	}
-}
 
 Mat DRLSE_Edge::sin2(Mat & x)
 {

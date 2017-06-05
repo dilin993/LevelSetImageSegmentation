@@ -13,60 +13,49 @@ const double c0 = 2;
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
-    {
-        cout << "Pleae provide an input image path as an argument." << endl;
-        return -1;
-    }
+	if (argc < 2)
+	{
+		cout << "Pleae provide an input image path as an argument." << endl;
+		return -1;
+	}
 
-    Mat img,imgSmooth,dx,dy,f,g,dx2,dy2;
+	Mat img,imgSmooth,dx,dy,f,g,dx2,dy2;
 	DRLSE_Edge drlse;
 
-    img = imread(argv[1], cv::ImreadModes::IMREAD_GRAYSCALE);
-    img.convertTo(img,CV_64F);
-    GaussianBlur(img,imgSmooth,Size(7,7),sigma);
+	img = imread(argv[1], cv::ImreadModes::IMREAD_GRAYSCALE);
+	img.convertTo(img,CV_64F);
+	GaussianBlur(img,imgSmooth,Size(7,7),sigma);
 	drlse.gradient(img, dx, dy);
-    pow(dx,2.0,dx2);
-    pow(dy,2.0,dy2);
-    f = dx2 + dy2;
-    g = 1.0/(f+1);
+	pow(dx,2.0,dx2);
+	pow(dy,2.0,dy2);
+	f = dx2 + dy2;
+	g = 1.0/(f+1);
 
-    Mat phi = Mat::ones( img.rows, img.cols ,  CV_64F);
-    phi = c0 * phi ;
+	Mat phi = Mat::ones( img.rows, img.cols ,  CV_64F);
+	phi = c0 * phi ;
 
-	
+	for ( int i = 24 ; i < 35 ; i ++ )
+	{
+		for ( int j= 19 ; j < 25 ; j ++ )
+		{
+			phi.at<double>(i,j) = -c0;
+		}
 
+		for ( int j= 39 ; j < 50 ; j ++ )
+		{
+			phi.at<double>(i,j) = -c0;
+		}
+	}
 
-    for ( int i = 24 ; i < 35 ; i ++ )
-    {
+	namedWindow(DISPLAY_WINDOW, cv::WINDOW_NORMAL);
 
-        for ( int j= 19 ; j < 25 ; j ++ )
-        {
-
-            phi.at<double>(i,j) = -c0;
-
-        }
-
-        for ( int j= 39 ; j < 50 ; j ++ )
-        {
-
-            phi.at<double>(i,j) = -c0;
-
-        }
-    }
-
-    namedWindow(DISPLAY_WINDOW, cv::WINDOW_NORMAL);
-	
-    for(int i=0;i<OUTER_ITER;i++)
-    {
-        drlse.run(phi,g,INNER_ITER);
-        //drawContours(img,phi,0,Scalar(255,0,0));
-        imshow(DISPLAY_WINDOW, phi);
-        cout << "Iter: " << i << " is completed." << endl;
-        cvWaitKey(1000);
-    }
-
-
-    cvWaitKey(0);
-    return 0;
+	for(int i=0;i<OUTER_ITER;i++)
+	{
+		drlse.run(phi,g,INNER_ITER);
+		imshow(DISPLAY_WINDOW, phi);
+		cout << "Iter: " << i << " is completed." << endl;
+		cvWaitKey(1000);
+	}
+	cvWaitKey(0);
+	return 0;
 }

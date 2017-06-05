@@ -7,8 +7,6 @@
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
 
-
-
 using namespace std;
 using namespace cv;
 
@@ -26,8 +24,6 @@ public:
 	Mat areaT(Mat phi, Mat g, double sigma);
 	void run(Mat &phi, Mat &g, int iter);
 	void gradient(Mat &src, Mat &dx, Mat &dy);
-	void divide2(Mat &src1, Mat &src2, Mat &ans);
-	void divide2(double val1, Mat &src2, Mat &ans);
 	Mat sin2(Mat &x);
 	Mat cos2(Mat &x);
 
@@ -37,6 +33,8 @@ private:
 	double alpha;
 	double sigma;
 	double timeStep;
+	Mat vx;
+	Mat vy;
 };
 
 #endif // !M_PI
