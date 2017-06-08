@@ -13,7 +13,7 @@ using namespace cv;
 class DRLSE_Edge
 {
 public:
-	DRLSE_Edge(double mu, double lamda, double alpha, double sigma, double timeStep);
+	//DRLSE_Edge(double mu, double lamda, double alpha, double sigma, double timeStep);
 	DRLSE_Edge();
 	Mat neumannBoundFunc(Mat f);
 	Mat dirac(Mat x, double sigma);
@@ -26,6 +26,7 @@ public:
 	void gradient(Mat &src, Mat &dx, Mat &dy);
 	Mat sin2(Mat &x);
 	Mat cos2(Mat &x);
+	void performSegmentation(Mat img);
 
 private:
 	double mu;

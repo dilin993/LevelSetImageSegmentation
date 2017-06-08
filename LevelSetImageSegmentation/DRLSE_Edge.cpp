@@ -3,16 +3,19 @@
 //
 
 #include "DRLSE_Edge.h"
-
+/*
 DRLSE_Edge::DRLSE_Edge(double mu, double lamda, double alpha, double sigma, double timeStep) :
 	mu(mu), lamda(lamda), alpha(alpha), sigma(sigma), timeStep(timeStep)
 {
 	return;
 }
+*/
 
-DRLSE_Edge::DRLSE_Edge() :
-	DRLSE_Edge(0.2, 5, -3, 1.5, 1)
+DRLSE_Edge::DRLSE_Edge()
+	//DRLSE_Edge(0.2, 5, -3, 1.5, 1)
 {
+	
+	 mu= 0.2, lamda = 5, alpha = -3 , sigma = 1.5, timeStep =1;
 	return;
 }
 
