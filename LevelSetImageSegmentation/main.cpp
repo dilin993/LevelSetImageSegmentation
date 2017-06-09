@@ -10,15 +10,16 @@ const int INNER_ITER = 5;
 const int OUTER_ITER = 300;
 const double sigma = 0.8;
 const double c0 = 2;
+int numberOfAreas=0;
 
 bool roi_capture = false;
 bool got_roi = false;
 
-bool initial_click = false;
+bool finished_click = false;
 Point pt1, pt2;
 Mat cap_img;
-//Callback for mousclick event, the x-y coordinate of mouse button-up and button-down 
-//are stored in two points pt1, pt2.
+
+vector<pair<Point,Point>>  initAreas;
 
 void performSegmentation(Mat img){
 
@@ -36,14 +37,19 @@ void performSegmentation(Mat img){
 	Mat phi = Mat::ones( img.rows, img.cols ,  CV_64F);
 	phi = c0 * phi ;
 
-	for ( int i = pt1.y ; i < pt2.y; i ++ )
-	{
-		for ( int j= pt1.x ; j < pt2.x ; j ++ )
+	Point p1,p2;
+	for (int k = 0; k < initAreas.size() ; k++){
+
+		p1 = initAreas[k].first;
+		p2= initAreas[k].second;
+		for ( int i = p1.y ; i < p2.y; i ++ )
 		{
-			phi.at<double>(i,j) = -c0;
+			for ( int j= p1.x ; j < p2.x ; j ++ )
+			{
+				phi.at<double>(i,j) = -c0;
+			}
 		}
 	}
-
 	namedWindow(DISPLAY_WINDOW, cv::WINDOW_NORMAL);
 
 	for(int i=0;i<OUTER_ITER;i++)
@@ -53,22 +59,20 @@ void performSegmentation(Mat img){
 		cout << "Iter: " << i << " is completed." << endl;
 		cvWaitKey(50);
 	}
-	//cvWaitKey(0);
+
 }
 void mouse_click(int event, int x, int y, int flags, void *param)
 {
-
 	switch(event)
 	{
 	case CV_EVENT_LBUTTONDOWN:
 		{
 			std::cout<<"Mouse Pressed"<<std::endl;
-
-			if(!got_roi && !initial_click)
+			if(!got_roi )
 			{
 				pt1.x = x;
 				pt1.y = y;
-				initial_click = true;
+				numberOfAreas--;
 
 			}
 			else
@@ -78,8 +82,6 @@ void mouse_click(int event, int x, int y, int flags, void *param)
 			break;
 		}
 
-		
-						
 	case CV_EVENT_LBUTTONUP:
 		{
 			if(!got_roi)
@@ -90,16 +92,21 @@ void mouse_click(int event, int x, int y, int flags, void *param)
 				pt2.x = x;
 				pt2.y = y;
 
+				pair < Point, Point> temp (pt1,pt2);
+				initAreas.push_back(temp);
+
 				cl = cap_img.clone();
 				Mat roi(cl, Rect(pt1, pt2));
 				Mat prev_imgT = roi.clone();
+
 				std::cout<<"PT1"<<pt1.x<<", "<<pt1.y<<std::endl;
-				std::cout<<"PT2"<<pt2.x<<","<<pt2.y<<std::endl;
+				std::cout<<"PT2"<<pt2.x<<", "<<pt2.y<< "/n" <<std::endl;
 
-				//imshow("Clone",cl);
+				if(numberOfAreas == 0){
+					got_roi = true;
+					performSegmentation(cap_img);
+				}
 
-				got_roi = true;
-				performSegmentation(cap_img);
 			}
 			else
 			{
@@ -107,22 +114,20 @@ void mouse_click(int event, int x, int y, int flags, void *param)
 			}
 			break;  
 		}
-
 	}
 
 }
-
-
-
 
 int main(int argc, char *argv[])
 {
 	if (argc < 2)
 	{
-		cout << "Pleae provide an input image path as an argument." << endl;
+		cout << "Please provide an input image path as an argument." << endl;
 		return -1;
 	}
 
+	cout << "Enter number of initial areas" << endl;
+	cin >> numberOfAreas;
 
 	Mat img;
 	img = imread(argv[1], cv::ImreadModes::IMREAD_GRAYSCALE);
@@ -130,7 +135,7 @@ int main(int argc, char *argv[])
 
 	namedWindow("Original", cv::WINDOW_GUI_NORMAL);
 	setMouseCallback("Original",mouse_click);
-	
+
 	imshow("Original", cap_img);
 	cvWaitKey(0);
 	return 0;
